@@ -15,16 +15,18 @@ from django.contrib.auth.models import User
 from .models import Profile
 from django.contrib import messages
 from django.views.generic import TemplateView, CreateView
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 
 
-#def TerrainUpdate(request, terrain_id):
- #   terrain = get_object_or_404(Terrain, terrain_id=id)
-  #  form = TerrainForm(data=request.POST or None, instance=terrain)
-  #  if form.is_valid():
-    #    form.save()
-      #  messages.success(request, 'Your terrain is updated successfully!')
-      #  redirect('terrain')
-    #return render_to_response('accounts/terrain.html', {}, RequestContext(request))
+# def TerrainUpdate(request, terrain_id):
+#   terrain = get_object_or_404(Terrain, terrain_id=id)
+#  form = TerrainForm(data=request.POST or None, instance=terrain)
+#  if form.is_valid():
+#    form.save()
+#  messages.success(request, 'Your terrain is updated successfully!')
+#  redirect('terrain')
+# return render_to_response('accounts/terrain.html', {}, RequestContext(request))
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):
@@ -41,13 +43,12 @@ class ProfileUpdateView(LoginRequiredMixin, TemplateView):
         file_data = request.FILES or None
 
         user_form = UserForm(post_data, instance=request.user)
-        profile = Profile(user=request.user)
-        profile_form = ProfileForm(post_data, file_data, instance=profile)
+        profile_form = ProfileForm(post_data, file_data, instance=request.user.profile)
 
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            messages.error(request, 'Your profile is updated successfully!')
+            messages.success(request, 'Le profil est modifié avec succès!')
             return HttpResponseRedirect(reverse_lazy('profile'))
 
         context = self.get_context_data(
@@ -65,8 +66,9 @@ def index(request):
     context = {'segment': 'index'}
     return render(request, "home.html", context)
 
+
 def accueil(request):
-    return render(request,"services.html")
+    return render(request, "services.html")
 
 
 def pages(request):
@@ -132,7 +134,7 @@ def user_deactivate(request, user_id):
     user = User.objects.get(pk=user_id)
     user.is_active = False
     user.save()
-    messages.success(request, "User account has been successfully deactivated!")
+    messages.success(request, "Le compte a été desactivé !")
     return redirect('system_users')
 
 
@@ -141,16 +143,39 @@ def user_activate(request, user_id):
     user = User.objects.get(pk=user_id)
     user.is_active = True
     user.save()
-    messages.success(request, "User account has been successfully activated!")
+    messages.success(request, "Le compte est activé!")
     return redirect('system_users')
 
 
 def delete_profile(request, user_id):
     user = User.objects.get(pk=user_id)
     user.delete()
-    messages.success(request, "The user is deleted")
+    messages.success(request, "Le compte est supprimé!")
     return redirect('system_users')
+
 
 def logoutView(request):
     auth.logout(request)
-    return render(request,'accounts/logout.html')
+    return render(request, 'accounts/logout.html')
+
+
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.info(request, ('Votre mot de passe a été modifié!'))
+            return redirect('change_password')
+        password1 = request.POST.get('new_password1')
+        password2 = request.POST.get('new_password2')
+        if password1 != password2:
+            messages.error(request, ("Mot de passe de confirmation ne correspond pas au nouveau mot de passe!"))
+        else:
+            messages.error(request, ("Mot de passe incorrect!"))
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'accounts/change_password.html', {
+        'form': form
+    })

@@ -78,9 +78,8 @@ def create_infirmier(request):
     form = InfirmierForm(request.POST or None)
     if form.is_valid():
         form.save()
-        form = InfirmierForm()
+        return redirect('list_infirmiers')
         messages.success(request, 'Infirmier ajouté!')
-    # return redirect('list_infirmier')
 
     return render(request, 'infos-perso/infirmier-form.html', {'form': form})
 
@@ -90,6 +89,7 @@ def create_medecin(request):
     if form.is_valid():
         form.save()
         form = MedecinForm()
+        return redirect('list_medecin')
         messages.warning(request, 'Medecin ajouté!')
         messages.warning(request, '')
 
@@ -100,7 +100,7 @@ def create_anesthesiste(request):
     form = AnesthesisteForm(request.POST or None)
     if form.is_valid():
         form.save()
-        form = AnesthesisteForm()
+        return redirect('list_anesthesiste')
         messages.success(request, 'Anesthesiste ajouté!')
 
     return render(request, 'infos-perso/anesthesiste-form.html', {'form': form})
@@ -110,8 +110,6 @@ def create_chirurgien(request):
     form = ChirurgienForm(request.POST or None)
     if form.is_valid():
         form.save()
-        form = ChirurgienForm()
-        messages.success(request, 'Chirurgien ajouté!')
         return redirect('list_chirurgien')
 
     return render(request, 'infos-perso/chirurgien-form.html', {'form': form})

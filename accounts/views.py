@@ -41,15 +41,26 @@ class ProfileUpdateView(LoginRequiredMixin, TemplateView):
     def post(self, request):
         post_data = request.POST or None
         file_data = request.FILES or None
+        try:
+            user_form = UserForm(post_data, instance=request.user)
+            profile_form = ProfileForm(post_data, file_data, instance=request.user.profile)
 
-        user_form = UserForm(post_data, instance=request.user)
-        profile_form = ProfileForm(post_data, file_data, instance=request.user.profile)
-
-        if user_form.is_valid() and profile_form.is_valid():
-            user_form.save()
-            profile_form.save()
-            messages.success(request, 'Le profil est modifié avec succès!')
-            return HttpResponseRedirect(reverse_lazy('profile'))
+            if user_form.is_valid() and profile_form.is_valid():
+                user_form.save()
+                profile_form.save()
+                messages.success(request, 'Votre profil est bien modifié!')
+                return HttpResponseRedirect(reverse_lazy('profile'))
+        except Profile.DoesNotExist:
+            user_form = UserForm(post_data, instance=request.user)
+            profile_form = ProfileForm(request.POST, request.FILES)
+            if user_form.is_valid() and profile_form.is_valid():
+                new_user = user_form.save()
+                profile = profile_form.save(commit=False)
+                if profile.user_id is None:
+                    profile.user_id = new_user.id
+                profile_form.save()
+                messages.success(request, 'Votre profil est bien modifié!')
+                return HttpResponseRedirect(reverse_lazy('profile'))
 
         context = self.get_context_data(
             user_form=user_form,
